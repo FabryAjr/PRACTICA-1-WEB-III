@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Galeria Pokemon</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <h1>Galeria Pokemon</h1>
+  </header>
+
+  <div class="buscador">
+    <input type="text" id="filtro" placeholder="Buscar por nombre...">
+  </div>
+
+  <div id="galeria" class="galeria"></div>
+
+  <div class="paginacion">
+    <button id="anterior"> -Anterior-</button>
+    <button id="siguiente"> -Siguiente-</button>
+  </div>
+
+  <p id="mensaje"></p>
+
+  <script>
+    const galeria = document.getElementById('galeria');
+    const filtro = document.getElementById('filtro');
+    const anterior = document.getElementById('anterior');
+    const siguiente = document.getElementById('siguiente');
+    const mensaje = document.getElementById('mensaje');
+
+    let pagina = 0;
+    let totalPokemons = [];
+
+    async function cargarPagina() {
+      galeria.innerHTML = '';
+      mensaje.textContent = 'Cargando...';
+
+      const url = `https://pokeapi.co/api/v2/pokemon?limit=20&offset=${pagina * 20}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      totalPokemons = data.results;
+
+      const detalles = await Promise.all(
+        totalPokemons.map(p => fetch(p.url).then(r => r.json()))
+      );
+
+      galeria.innerHTML = '';
+      detalles.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'pokemon';
+        div.innerHTML = `
+          <img src="${p.sprites.front_default}" alt="${p.name}">
+          <h3>${p.name}</h3>
+          <p>Numero Pokedex: ${p.id}</p>
+        `;
+        galeria.appendChild(div);
+      });
+
+      mensaje.textContent = `Página ${pagina + 1}`;
+      anterior.disabled = pagina === 0;
+    }
+
+    filtro.addEventListener('input', () => {
+      const texto = filtro.value.toLowerCase();
+      const pokemons = document.querySelectorAll('.pokemon');
+      let visibles = 0;
+
+      pokemons.forEach(p => {
+        const nombre = p.querySelector('h3').textContent.toLowerCase();
+        p.style.display = nombre.includes(texto) ? 'block' : 'none';
+        if (nombre.includes(texto)) visibles++;
+      });
+
+      mensaje.textContent = visibles > 0
+        ? `Mostrando ${visibles} resultados`
+        : 'No se encontraron resultados';
+    });
+
+    anterior.addEventListener('click', () => {
+      if (pagina > 0) {
+        pagina--;
+        cargarPagina();
+      }
+    });
+
+    siguiente.addEventListener('click', () => {
+      pagina++;
+      cargarPagina();
+    });
+
+    cargarPagina();
+  </script>
+
+</body>
+</html>
